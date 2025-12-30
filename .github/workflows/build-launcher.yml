@@ -1,0 +1,24 @@
+name: Build Windows Launcher
+
+on:
+  push:
+    paths:
+      - 'native-engine/launcher/**'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+    - name: Build launcher
+      working-directory: native-engine/launcher
+      run: cargo build --release
+    - name: Test help command
+      working-directory: native-engine/launcher
+      run: ./target/release/aaa-launcher.exe --help
+    - uses: actions/upload-artifact@v4
+      with:
+        name: aaa-launcher-windows
+        path: native-engine/launcher/target/release/aaa-launcher.exe
