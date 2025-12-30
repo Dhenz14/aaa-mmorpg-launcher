@@ -58,9 +58,10 @@ fn print_version() {
 fn is_elevated() -> bool {
     use std::mem;
     use std::ptr;
+    use winapi::ctypes::c_void;
     
     unsafe {
-        let mut token: *mut std::ffi::c_void = ptr::null_mut();
+        let mut token: *mut c_void = ptr::null_mut();
         let process = winapi::um::processthreadsapi::GetCurrentProcess();
         
         if winapi::um::processthreadsapi::OpenProcessToken(
@@ -77,7 +78,7 @@ fn is_elevated() -> bool {
         let result = winapi::um::securitybaseapi::GetTokenInformation(
             token,
             winapi::um::winnt::TokenElevation,
-            &mut elevation as *mut _ as *mut _,
+            &mut elevation as *mut _ as *mut c_void,
             mem::size_of::<winapi::um::winnt::TOKEN_ELEVATION>() as u32,
             &mut size,
         );
