@@ -22,6 +22,9 @@ mod world;
 mod events;
 mod engine_fabric;
 
+#[cfg(test)]
+mod stress_tests;
+
 #[cfg(feature = "dev-sync")]
 mod dev_sync;
 
