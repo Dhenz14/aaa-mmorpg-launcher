@@ -1,0 +1,123 @@
+[package]
+name = "mmo-engine"
+version = "0.1.0"
+edition = "2021"
+authors = ["MMO Engine Team"]
+description = "AAA MMORPG Engine - Bevy ECS Core"
+license = "MIT"
+repository = "https://github.com/your-org/mmo-engine"
+
+[features]
+default = ["atom"]
+networking = ["dep:reqwest", "dep:tungstenite", "dep:base64", "dep:url"]
+dev-sync = ["networking"]
+atom = ["dep:atom-bridge"]
+audio = ["dep:rodio", "dep:hrtf"]
+dynamic = ["bevy/dynamic_linking"]
+trace = ["bevy/trace", "bevy/trace_tracy_memory"]
+profile = ["trace"]
+tracy = ["dep:tracy-client"]
+
+[dependencies]
+bevy = { version = "0.15", features = ["serialize"] }
+bevy_rapier3d = "0.29"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+ron = "0.8"
+toml = "0.8"
+bincode = "1.3"
+tokio = { version = "1.0", features = ["full"] }
+noise = "0.9"
+rand = "0.8"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+log = "0.4"
+env_logger = "0.10"
+thiserror = "1.0"
+async-trait = "0.1"
+futures-lite = "2.0"
+reqwest = { version = "0.11", features = ["json", "blocking"], optional = true }
+tungstenite = { version = "0.20", optional = true }
+base64 = { version = "0.21", optional = true }
+url = { version = "2.5", optional = true }
+image = "0.24"
+atom-bridge = { path = "../atom-bridge", optional = true }
+rodio = { version = "0.18", optional = true }
+hrtf = { version = "0.8", optional = true }
+tracy-client = { version = "0.17", optional = true, default-features = false, features = ["enable"] }
+lazy_static = "1.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Memory optimization
+bumpalo = "3.14"
+
+# Object pooling
+slotmap = "1.0"
+
+# Scripting
+rhai = { version = "1.18", features = ["sync", "serde", "metadata", "internals"] }
+notify = "6.1"
+
+
+
+[dev-dependencies]
+criterion = "0.5"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+strip = true
+panic = "abort"
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+strip = false
+
+[profile.dev.package.bevy_rapier3d]
+opt-level = 3
+
+# Profile-Guided Optimization (PGO) build profile
+# Usage:
+#   1. Build with instrumentation: RUSTFLAGS="-Cprofile-generate=/tmp/pgo-data" cargo build --profile pgo-gen
+#   2. Run workload to collect data
+#   3. Merge profiles: llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data
+#   4. Build optimized: RUSTFLAGS="-Cprofile-use=/tmp/pgo-data/merged.profdata" cargo build --profile pgo-opt
+[profile.pgo-gen]
+inherits = "release"
+lto = "thin"
+codegen-units = 1
+
+[profile.pgo-opt]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+
+# Fast iteration profile - quick builds for testing
+# Use: cargo build --profile fast
+[profile.fast]
+inherits = "release"
+lto = "off"
+codegen-units = 16
+incremental = true
+opt-level = 2
+debug = 0
+
+# Same-machine optimized build (fastest runtime, slower build)
+# Use: cargo build --profile native
+[profile.native]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+strip = true
+panic = "abort"
+# Add RUSTFLAGS="-C target-cpu=native" for CPU-specific optimizations
