@@ -1,4 +1,4 @@
-name: Windows Build & Test
+name: Build & Test
 
 on:
   push:
@@ -11,9 +11,50 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: -C target-cpu=native
 
 jobs:
+  quick-check:
+    name: Quick Check (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native-engine/bevy-game/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+
+      - name: Format check
+        working-directory: native-engine/bevy-game
+        run: cargo fmt --check
+
+      - name: Quick compile check
+        working-directory: native-engine/bevy-game
+        run: cargo check --no-default-features
+
+      - name: Run tests
+        working-directory: native-engine/bevy-game
+        run: cargo test --no-default-features --lib
+
   build-windows:
     name: Build on Windows
     runs-on: windows-latest
