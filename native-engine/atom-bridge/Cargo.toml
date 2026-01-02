@@ -1,0 +1,22 @@
+[package]
+name = "atom-bridge"
+version = "0.2.0"
+edition = "2021"
+description = "Rust FFI bridge to the custom Vulkan renderer (68K+ lines C++)"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/aaa-mmorpg/engine"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+
+[dependencies]
+bevy = { version = "0.15", default-features = false, features = ["bevy_render"] }
+log = "0.4"
+thiserror = "1.0"
+
+[build-dependencies]
+cc = "1.0"
