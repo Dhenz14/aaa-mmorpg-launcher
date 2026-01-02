@@ -173,41 +173,69 @@ REM ============================================================================
 REM STEP 4: Download engine (if needed)
 REM ============================================================================
 if "%NEED_SYNC%"=="1" (
-    echo  [*] Downloading engine...
+    echo  [*] Downloading engine (~345MB - this may take a few minutes)...
     
     if not exist "%ENGINE_DIR%" mkdir "%ENGINE_DIR%"
     
     set "ZIP_PATH=%INSTALL_DIR%\engine.zip"
     
-    curl -L --progress-bar -o "!ZIP_PATH!" "%SERVER_URL%/sync/full.zip" 2>nul
+    REM Use curl with retry and longer timeout for large download
+    curl -L --retry 3 --retry-delay 5 --connect-timeout 30 --max-time 600 --progress-bar -o "!ZIP_PATH!" "%SERVER_URL%/sync/full.zip"
+    set "CURL_EXIT=!ERRORLEVEL!"
     
-    if exist "!ZIP_PATH!" (
-        echo  [*] Extracting to %ENGINE_DIR%...
-        
-        powershell -NoProfile -Command "Expand-Archive -Path '!ZIP_PATH!' -DestinationPath '%ENGINE_DIR%' -Force"
-        
-        REM Debug: Show what was extracted
-        echo  [*] Checking extracted files...
-        if exist "%ENGINE_DIR%\bevy-game\Cargo.toml" (
-            echo  [OK] Found bevy-game/Cargo.toml
-        ) else (
-            echo  [!] bevy-game/Cargo.toml not found at expected path
-            echo  [*] Listing %ENGINE_DIR%:
-            dir /b "%ENGINE_DIR%" 2>nul
-        )
-        
+    if !CURL_EXIT! neq 0 (
+        echo  [X] Download failed with error code !CURL_EXIT!
+        goto :sync_failed
+    )
+    
+    if not exist "!ZIP_PATH!" (
+        echo  [X] Download failed - file not created
+        goto :sync_failed
+    )
+    
+    REM Verify zip file size (should be at least 1MB for valid package)
+    for %%A in ("!ZIP_PATH!") do set "ZIP_SIZE=%%~zA"
+    if !ZIP_SIZE! LSS 1000000 (
+        echo  [X] Download incomplete - file too small: !ZIP_SIZE! bytes
+        del "!ZIP_PATH!" 2>nul
+        goto :sync_failed
+    )
+    echo  [OK] Downloaded !ZIP_SIZE! bytes
+    
+    echo  [*] Extracting to %ENGINE_DIR%...
+    
+    REM Clear old engine dir first
+    if exist "%ENGINE_DIR%" rmdir /s /q "%ENGINE_DIR%" 2>nul
+    mkdir "%ENGINE_DIR%"
+    
+    REM Extract with error handling
+    powershell -NoProfile -Command "try { Expand-Archive -Path '!ZIP_PATH!' -DestinationPath '%ENGINE_DIR%' -Force -ErrorAction Stop; exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }"
+    set "EXTRACT_EXIT=!ERRORLEVEL!"
+    
+    if !EXTRACT_EXIT! neq 0 (
+        echo  [X] Extraction failed with error code !EXTRACT_EXIT!
+        del "!ZIP_PATH!" 2>nul
+        goto :sync_failed
+    )
+    
+    REM Verify extraction succeeded
+    if exist "%ENGINE_DIR%\bevy-game\Cargo.toml" (
+        echo  [OK] Engine extracted successfully
         if defined REMOTE_VERSION (
             echo !REMOTE_VERSION!>"%VERSION_FILE%"
         )
-        echo  [OK] Engine synced
         REM Force C++ rebuild on new sync
         del "%CPP_BUILD_STATUS%" 2>nul
-        
-        del "!ZIP_PATH!" 2>nul
     ) else (
-        echo  [X] Download failed
+        echo  [X] Extraction incomplete - Cargo.toml not found
+        echo  [*] Contents of %ENGINE_DIR%:
+        dir /b "%ENGINE_DIR%" 2>nul
+        del "!ZIP_PATH!" 2>nul
         goto :sync_failed
     )
+    
+    del "!ZIP_PATH!" 2>nul
+    echo  [OK] Engine synced
 )
 
 echo.
