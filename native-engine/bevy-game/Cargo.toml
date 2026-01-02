@@ -20,8 +20,8 @@ tracy = ["dep:tracy-client"]
 rapier = ["dep:bevy_rapier3d"]
 
 [dependencies]
-bevy = { version = "0.14", features = ["serialize"] }
-bevy_rapier3d = { version = "0.27", optional = true }
+bevy = { version = "0.12", features = ["serialize"] }
+bevy_rapier3d = { version = "0.24", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ron = "0.8"
@@ -40,9 +40,9 @@ reqwest = { version = "0.11", features = ["json", "blocking"], optional = true }
 tungstenite = { version = "0.20", optional = true }
 base64 = { version = "0.21", optional = true }
 url = { version = "2.5", optional = true }
-image = "0.24"
+image = "0.24.7"
 atom-bridge = { path = "../atom-bridge", optional = true }
-rodio = { version = "0.18", optional = true }
+rodio = { version = "0.17", optional = true }
 hrtf = { version = "0.8", optional = true }
 tracy-client = { version = "0.17", optional = true, default-features = false, features = ["enable"] }
 lazy_static = "1.4"
